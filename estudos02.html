@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Estudos Bíblicos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Estilos para cabeçalho integrado */
+        .integrated-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6580 100%);
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .header-title h1 {
+            font-size: 1.8rem;
+            margin: 0 0 5px 0;
+            color: white;
+        }
+        
+        .header-title .subtitle {
+            font-size: 0.95rem;
+            margin: 0;
+            opacity: 0.9;
+        }
+        
+        .header-db-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .db-status-header {
+            font-size: 0.85rem;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 6px 10px;
+            border-radius: 4px;
+        }
+        
+        .db-status-header strong {
+            color: #ecf0f1;
+        }
+        
+        .header-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header-db-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-db-header, .file-label-header, .btn-exit-header {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-db-header {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-db-header:hover:not(:disabled) {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-db-header:disabled {
+            background-color: #7f8c8d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .file-label-header {
+            background-color: #9b59b6;
+            color: white;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .file-label-header:hover {
+            background-color: #8e44ad;
+            transform: translateY(-2px);
+        }
+        
+        .file-label-header input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .btn-exit-header {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .btn-exit-header:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        /* Ajustes para o layout principal */
+        .compact-main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .compact-form, .compact-studies {
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #2c3e50;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .counter {
+            font-size: 0.9rem;
+            background-color: #3498db;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+            display: block;
+            color: #34495e;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group textarea {
+            padding: 10px;
+            font-size: 0.95rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .compact-nav {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .btn-nav, .btn-action {
+            padding: 10px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .btn-nav {
+            background-color: #ecf0f1;
+            color: #2c3e50;
+        }
+        
+        .btn-nav:hover:not(:disabled) {
+            background-color: #bdc3c7;
+            transform: translateY(-2px);
+        }
+        
+        .btn-nav:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-action {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .btn-action:hover:not(:disabled) {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background-color: #2ecc71;
+            color: white;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background-color: #27ae60;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .compact-search {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .compact-search input {
+            padding: 10px 10px 10px 35px;
+            font-size: 0.95rem;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: border-color 0.3s;
+        }
+        
+        .compact-search input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+        }
+        
+        .compact-card {
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .compact-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .formatted-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            max-height: 300px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .study-footer {
+            margin-top: 15px;
+            padding-top: 15px;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .date {
+            color: #7f8c8d;
+        }
+        
+        .study-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7f8c8d;
+        }
+        
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .empty-state p {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .compact-logs {
+            padding: 15px;
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+        
+        .compact-logs h3 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            color: #2c3e50;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .logs-container {
+            max-height: 150px;
+            font-size: 0.85rem;
+            overflow-y: auto;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .notification.success {
+            background-color: #2ecc71;
+        }
+        
+        .notification.error {
+            background-color: #e74c3c;
+        }
+        
+        /* Media queries para responsividade */
+        @media (max-width: 992px) {
+            .compact-main {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-top {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .header-bottom {
+                flex-direction: column;
+                gap: 10px;
+                align-items: stretch;
+            }
+            
+            .header-db-buttons {
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .integrated-header {
+                padding: 12px 15px;
+            }
+            
+            .header-title h1 {
+                font-size: 1.5rem;
+            }
+            
+            .header-db-buttons {
+                flex-direction: column;
+            }
+            
+            .compact-nav {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .study-footer {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .study-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="integrated-header">
+            <div class="header-top">
+                <div class="header-title">
+                    <h1>Sistema de Estudos Bíblicos</h1>
+                    <p class="subtitle">Organize seus estudos com SQLite no navegador</p>
+                </div>
+                <div class="header-db-info">
+                    <div class="db-status-header">
+                        <strong>Status:</strong> <span id="dbStatus">Carregando SQL.js...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="header-bottom">
+                <div class="header-db-buttons">
+                    <button class="btn-db-header" id="exportBtn" disabled>
+                        <i class="fas fa-download"></i> Exportar BD
+                    </button>
+                    <label class="file-label-header">
+                        <i class="fas fa-upload"></i> Importar BD
+                        <input type="file" id="importInput" accept=".db,.sqlite,.sqlite3" />
+                    </label>
+                </div>
+                
+                <button class="btn-exit-header" id="exitBtn">
+                    <i class="fas fa-power-off"></i> Sair
+                </button>
+            </div>
+        </header>
+        
+        <div class="compact-main">
+            <div class="compact-form">
+                <h2 class="section-title">
+                    <span id="formTitle">Novo Estudo</span>
+                    <span class="counter" id="editCounter" style="display: none;">Editando</span>
+                </h2>
+                
+                <form id="studyForm">
+                    <div class="form-group">
+                        <label for="title">Título do Estudo</label>
+                        <input
+                            type="text"
+                            id="title"
+                            placeholder="Ex: A parábola do semeador"
+                            disabled
+                        />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Conteúdo do Estudo</label>
+                        <textarea
+                            id="description"
+                            placeholder="Escreva aqui seu estudo bíblico..."
+                            rows="5"
+                            disabled
+                        ></textarea>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button type="submit" class="btn-primary" id="saveBtn" disabled>
+                            <i class="fas fa-save"></i> <span id="saveText">Salvar</span>
+                        </button>
+                        
+                        <button type="button" class="btn-secondary" id="cancelBtn" style="display: none;">
+                            <i class="fas fa-times"></i> Cancelar Edição
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="navigation-buttons compact-nav">
+                    <button class="btn-nav" id="firstBtn" disabled>
+                        <i class="fas fa-fast-backward"></i> Primeiro
+                    </button>
+                    <button class="btn-nav" id="prevBtn" disabled>
+                        <i class="fas fa-arrow-left"></i> Anterior
+                    </button>
+                    <button class="btn-action" id="newBtn" disabled>
+                        <i class="fas fa-plus"></i> Novo
+                    </button>
+                    <button class="btn-nav" id="nextBtn" disabled>
+                        Próximo <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button class="btn-nav" id="lastBtn" disabled>
+                        Último <i class="fas fa-fast-forward"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="compact-studies">
+                <h2 class="section-title">
+                    Visualização do Estudo
+                    <span class="counter" id="studyCounter">0/0</span>
+                </h2>
+                
+                <div class="search-box compact-search">
+                    <i class="fas fa-search search-icon"></i>
+                    <input
+                        type="text"
+                        id="searchInput"
+                        placeholder="Buscar estudos..."
+                        disabled
+                    />
+                </div>
+                
+                <div class="study-viewer">
+                    <div id="studyContent">
+                        <div class="empty-state">
+                            <i class="fas fa-book-open"></i>
+                            <p id="emptyStateText">Carregando banco de dados...</p>
+                            <button class="btn-primary" id="createFirstBtn" style="display: none;">
+                                <i class="fas fa-plus"></i> Criar Primeiro Estudo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="compact-logs">
+            <h3>Logs do Sistema</h3>
+            <div class="logs-container" id="logsContainer">
+                <div class="log-entry">[00:00:00] Iniciando sistema...</div>
+            </div>
+        </div>
+
+        <div class="notification" id="notification" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let db = null;
+        let SQL = null;
+        let studies = [];
+        let filteredStudies = [];
+        let currentStudyIndex = 0;
+        let currentEditIndex = -1;
+        
+        // Elementos DOM
+        const dbStatus = document.getElementById('dbStatus');
+        const exportBtn = document.getElementById('exportBtn');
+        const importInput = document.getElementById('importInput');
+        const exitBtn = document.getElementById('exitBtn');
+        const studyForm = document.getElementById('studyForm');
+        const titleInput = document.getElementById('title');
+        const descriptionInput = document.getElementById('description');
+        const saveBtn = document.getElementById('saveBtn');
+        const saveText = document.getElementById('saveText');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const formTitle = document.getElementById('formTitle');
+        const editCounter = document.getElementById('editCounter');
+        const firstBtn = document.getElementById('firstBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const newBtn = document.getElementById('newBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const lastBtn = document.getElementById('lastBtn');
+        const studyCounter = document.getElementById('studyCounter');
+        const searchInput = document.getElementById('searchInput');
+        const studyContent = document.getElementById('studyContent');
+        const emptyStateText = document.getElementById('emptyStateText');
+        const createFirstBtn = document.getElementById('createFirstBtn');
+        const logsContainer = document.getElementById('logsContainer');
+        const notification = document.getElementById('notification');
+        
+        // Função para adicionar logs
+        function addLog(message) {
+            const now = new Date();
+            const time = `[${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}]`;
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.textContent = `${time} ${message}`;
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+        
+        // Função para mostrar notificação
+        function showNotification(message, isError = false) {
+            notification.textContent = message;
+            notification.className = `notification ${isError ? 'error' : 'success'}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Inicializar SQL.js
+        addLog('Carregando SQL.js...');
+        
+        // Configuração do SQL.js
+        const config = {
+            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+        };
+        
+        // Inicializar o SQL.js
+        initSqlJs(config).then(function(SQLInstance) {
+            SQL = SQLInstance;
+            addLog('SQL.js carregado com sucesso');
+            dbStatus.textContent = 'Banco de dados pronto';
+            
+            // Criar um novo banco de dados
+            db = new SQL.Database();
+            addLog('Novo banco de dados criado');
+            
+            // Criar tabela se não existir
+            db.run(`
+                CREATE TABLE IF NOT EXISTS estudos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    titulo TEXT NOT NULL,
+                    descricao TEXT NOT NULL,
+                    data_criacao TEXT DEFAULT (datetime('now'))
+                );
+            `);
+            addLog('Tabela de estudos verificada/criada');
+            
+            // Habilitar controles
+            titleInput.disabled = false;
+            descriptionInput.disabled = false;
+            saveBtn.disabled = false;
+            newBtn.disabled = false;
+            searchInput.disabled = false;
+            exportBtn.disabled = false;
+            
+            // Carregar estudos
+            loadStudies();
+            
+        }).catch(function(error) {
+            addLog('Erro ao carregar SQL.js: ' + error.message);
+            dbStatus.textContent = 'Erro ao carregar SQL.js';
+            showNotification('Erro ao carregar o banco de dados', true);
+        });
+        
+        // Função para carregar estudos
+        function loadStudies() {
+            try {
+                const result = db.exec("SELECT * FROM estudos ORDER BY data_criacao DESC");
+                if (result.length && result[0].values) {
+                    studies = result[0].values.map(row => ({
+                        id: row[0],
+                        title: row[1] || '',
+                        description: row[2] || '',
+                        date: row[3]
+                    }));
+                    addLog(`Carregados ${studies.length} estudos`);
+                    
+                    filteredStudies = [...studies];
+                    currentStudyIndex = studies.length > 0 ? 0 : -1;
+                    updateStudyView();
+                    
+                    if (studies.length > 0) {
+                        emptyStateText.textContent = 'Nenhum estudo correspondente à busca';
+                    } else {
+                        emptyStateText.textContent = 'Nenhum estudo cadastrado';
+                        createFirstBtn.style.display = 'block';
+                    }
+                } else {
+                    studies = [];
+                    filteredStudies = [];
+                    currentStudyIndex = -1;
+                    addLog('Nenhum estudo encontrado');
+                    emptyStateText.textContent = 'Nenhum estudo cadastrado';
+                    createFirstBtn.style.display = 'block';
+                    updateStudyView();
+                }
+            } catch (error) {
+                addLog('Erro ao carregar estudos: ' + error.message);
+                showNotification('Erro ao carregar estudos', true);
+            }
+        }
+        
+        // Função para atualizar a visualização do estudo
+        function updateStudyView() {
+            studyCounter.textContent = filteredStudies.length > 0 ? 
+                `${currentStudyIndex + 1}/${filteredStudies.length}` : '0/0';
+            
+            // Habilitar/desabilitar botões de navegação
+            firstBtn.disabled = filteredStudies.length === 0;
+            prevBtn.disabled = filteredStudies.length === 0;
+            nextBtn.disabled = filteredStudies.length === 0;
+            lastBtn.disabled = filteredStudies.length === 0;
+            
+            if (filteredStudies.length > 0 && currentStudyIndex >= 0) {
+                const study = filteredStudies[currentStudyIndex];
+                
+                studyContent.innerHTML = `
+                    <div class="study-card compact-card">
+                        <h3>${study.title || 'Sem título'}</h3>
+                        <div class="study-content formatted-text">
+                            <p>${study.description || 'Sem conteúdo'}</p>
+                        </div>
+                        <div class="study-footer">
+                            <div class="date">
+                                Criado em: ${study.date ? new Date(study.date).toLocaleString('pt-BR') : 'Data não disponível'}
+                            </div>
+                            <div class="study-actions">
+                                <button class="btn-action" id="editBtn">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="btn-danger" id="deleteBtn">
+                                    <i class="fas fa-trash"></i> Excluir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Adicionar event listeners aos botões
+                document.getElementById('editBtn').addEventListener('click', editCurrentStudy);
+                document.getElementById('deleteBtn').addEventListener('click', deleteCurrentStudy);
+                
+            } else {
+                studyContent.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-book-open"></i>
+                        <p>${filteredStudies.length === 0 ? 'Nenhum estudo encontrado' : 'Nenhum estudo cadastrado'}</p>
+                        ${studies.length === 0 ? '<button class="btn-primary" id="createFirstBtn"><i class="fas fa-plus"></i> Criar Primeiro Estudo</button>' : ''}
+                    </div>
+                `;
+                
+                if (studies.length === 0) {
+                    document.getElementById('createFirstBtn').addEventListener('click', createNewStudy);
+                }
+            }
+        }
+        
+        // Função para criar um novo estudo
+        function createNewStudy() {
+            titleInput.value = '';
+            descriptionInput.value = '';
+            currentEditIndex = -1;
+            formTitle.textContent = 'Novo Estudo';
+            editCounter.style.display = 'none';
+            cancelBtn.style.display = 'none';
+            saveText.textContent = 'Salvar';
+            addLog('Preparando para criar novo estudo');
+            
+            // Focar no título para facilitar a criação
+            titleInput.focus();
+        }
+        
+        // Função para editar o estudo atual
+        function editCurrentStudy() {
+            if (filteredStudies.length === 0) return;
+            
+            const study = filteredStudies[currentStudyIndex];
+            titleInput.value = study.title;
+            descriptionInput.value = study.description;
+            
+            // Encontrar o índice real no array completo
+            currentEditIndex = studies.findIndex(s => s.id === study.id);
+            formTitle.textContent = 'Editar Estudo';
+            editCounter.style.display = 'inline';
+            cancelBtn.style.display = 'block';
+            saveText.textContent = 'Atualizar';
+            
+            addLog(`Editando estudo: ${study.title}`);
+        }
+        
+        // Função para excluir o estudo atual
+        function deleteCurrentStudy() {
+            if (filteredStudies.length === 0) return;
+            
+            if (confirm('Tem certeza que deseja excluir este estudo?')) {
+                try {
+                    const study = filteredStudies[currentStudyIndex];
+                    const studyId = study.id;
+                    
+                    db.run("DELETE FROM estudos WHERE id = ?", [studyId]);
+                    addLog(`Estudo excluído (ID: ${studyId})`);
+                    
+                    // Recarregar estudos
+                    loadStudies();
+                    showNotification('Estudo excluído com sucesso!');
+                    
+                    // Se estava editando o item excluído, limpar o formulário
+                    if (currentEditIndex >= 0 && studies[currentEditIndex]?.id === studyId) {
+                        createNewStudy();
+                    }
+                } catch (error) {
+                    addLog('Erro ao excluir estudo: ' + error.message);
+                    showNotification('Erro ao excluir estudo.', true);
+                }
+            }
+        }
+        
+        // Função para sair do aplicativo
+        function exitApp() {
+            if (confirm('Tem certeza que deseja sair do aplicativo?')) {
+                addLog('Aplicativo finalizado');
+                showNotification('Aplicativo finalizado com sucesso!');
+                
+                // Limpar o banco de dados
+                if (db) {
+                    db.close();
+                }
+                
+                // Desabilitar controles
+                titleInput.disabled = true;
+                descriptionInput.disabled = true;
+                saveBtn.disabled = true;
+                newBtn.disabled = true;
+                searchInput.disabled = true;
+                exportBtn.disabled = true;
+                firstBtn.disabled = true;
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+                lastBtn.disabled = true;
+                
+                // Limpar dados
+                studies = [];
+                filteredStudies = [];
+                currentStudyIndex = -1;
+                currentEditIndex = -1;
+                
+                // Atualizar interface
+                updateStudyView();
+                dbStatus.textContent = 'Aplicativo finalizado';
+                
+                // Limpar formulário
+                titleInput.value = '';
+                descriptionInput.value = '';
+                formTitle.textContent = 'Novo Estudo';
+                editCounter.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                saveText.textContent = 'Salvar';
+            }
+        }
+        
+        // Event Listeners
+        studyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const title = titleInput.value.trim();
+            const description = descriptionInput.value.trim();
+            
+            if (!title || !description) {
+                showNotification('Por favor, preencha todos os campos.', true);
+                addLog('Tentativa de envio com campos vazios.');
+                return;
+            }
+            
+            try {
+                if (currentEditIndex >= 0) {
+                    // Modo edição
+                    const studyId = studies[currentEditIndex].id;
+                    db.run(
+                        "UPDATE estudos SET titulo = ?, descricao = ? WHERE id = ?",
+                        [title, description, studyId]
+                    );
+                    addLog(`Estudo atualizado no banco de dados (ID: ${studyId})`);
+                } else {
+                    // Modo criação
+                    db.run(
+                        "INSERT INTO estudos (titulo, descricao) VALUES (?, ?)",
+                        [title, description]
+                    );
+                    addLog("Estudo inserido no banco de dados");
+                }
+                
+                // Recarregar estudos
+                loadStudies();
+                
+                titleInput.value = '';
+                descriptionInput.value = '';
+                currentEditIndex = -1;
+                
+                showNotification(currentEditIndex >= 0 ? 'Estudo atualizado com sucesso!' : 'Estudo salvo com sucesso!');
+                
+                // Resetar formulário
+                formTitle.textContent = 'Novo Estudo';
+                editCounter.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                saveText.textContent = 'Salvar';
+                
+            } catch (error) {
+                addLog('Erro ao salvar no banco de dados: ' + error.message);
+                showNotification('Erro ao salvar estudo.', true);
+            }
+        });
+        
+        cancelBtn.addEventListener('click', createNewStudy);
+        
+        newBtn.addEventListener('click', createNewStudy);
+        
+        firstBtn.addEventListener('click', function() {
+            if (filteredStudies.length === 0) return;
+            currentStudyIndex = 0;
+            addLog('Navegando para o primeiro estudo');
+            updateStudyView();
+        });
+        
+        prevBtn.addEventListener('click', function() {
+            if (filteredStudies.length === 0) return;
+            
+            currentStudyIndex--;
+            if (currentStudyIndex < 0) currentStudyIndex = filteredStudies.length - 1;
+            
+            addLog(`Navegando para estudo anterior: ${filteredStudies[currentStudyIndex].title}`);
+            updateStudyView();
+        });
+        
+        nextBtn.addEventListener('click', function() {
+            if (filteredStudies.length === 0) return;
+            
+            currentStudyIndex++;
+            if (currentStudyIndex >= filteredStudies.length) currentStudyIndex = 0;
+            
+            addLog(`Navegando para próximo estudo: ${filteredStudies[currentStudyIndex].title}`);
+            updateStudyView();
+        });
+        
+        lastBtn.addEventListener('click', function() {
+            if (filteredStudies.length === 0) return;
+            currentStudyIndex = filteredStudies.length - 1;
+            addLog('Navegando para o último estudo');
+            updateStudyView();
+        });
+        
+        searchInput.addEventListener('input', function() {
+            const term = searchInput.value.trim().toLowerCase();
+            
+            if (term === '') {
+                filteredStudies = [...studies];
+            } else {
+                filteredStudies = studies.filter(study => {
+                    const title = study.title || '';
+                    const description = study.description || '';
+                    
+                    return (
+                        title.toLowerCase().includes(term) || 
+                        description.toLowerCase().includes(term)
+                    );
+                });
+            }
+            
+            currentStudyIndex = filteredStudies.length > 0 ? 0 : -1;
+            addLog(`Busca realizada: "${term}" - ${filteredStudies.length} resultados`);
+            updateStudyView();
+        });
+        
+        exportBtn.addEventListener('click', function() {
+            try {
+                const data = db.export();
+                const buffer = new Uint8Array(data);
+                const blob = new Blob([buffer], { type: 'application/octet-stream' });
+                
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'estudos_biblicos.sqlite';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                
+                URL.revokeObjectURL(url);
+                addLog('Banco de dados exportado com sucesso');
+                showNotification('Banco de dados exportado!');
+            } catch (error) {
+                addLog('Erro ao exportar banco: ' + error.message);
+                showNotification('Erro ao exportar banco de dados', true);
+            }
+        });
+        
+        // Função para importar banco de dados
+        importInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function() {
+                try {
+                    const uint8Array = new Uint8Array(reader.result);
+                    
+                    // Fechar o banco atual se existir
+                    if (db) {
+                        db.close();
+                    }
+                    
+                    // Criar novo banco com os dados importados
+                    db = new SQL.Database(uint8Array);
+                    addLog('Banco de dados importado com sucesso');
+                    
+                    // Recarregar estudos
+                    loadStudies();
+                    
+                    // Habilitar controles
+                    titleInput.disabled = false;
+                    descriptionInput.disabled = false;
+                    saveBtn.disabled = false;
+                    newBtn.disabled = false;
+                    searchInput.disabled = false;
+                    exportBtn.disabled = false;
+                    
+                    showNotification('Banco de dados importado com sucesso!');
+                } catch (error) {
+                    addLog('Erro ao importar banco: ' + error.message);
+                    showNotification('Erro ao importar banco de dados', true);
+                    
+                    // Se ocorrer erro, criar um novo banco vazio
+                    db = new SQL.Database();
+                    db.run(`
+                        CREATE TABLE IF NOT EXISTS estudos (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            titulo TEXT NOT NULL,
+                            descricao TEXT NOT NULL,
+                            data_criacao TEXT DEFAULT (datetime('now'))
+                        );
+                    `);
+                    loadStudies();
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+            // Limpar o input para permitir importar o mesmo arquivo novamente
+            e.target.value = '';
+        });
+        
+        exitBtn.addEventListener('click', exitApp);
+        
+        // Adicionar listener para o botão de criar primeiro estudo
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.id === 'createFirstBtn') {
+                createNewStudy();
+            }
+        });
+        
+        // Adicionar data e hora inicial aos logs
+        addLog('Sistema inicializado. Aguardando ações...');
+    </script>
+</body>
+</html>
